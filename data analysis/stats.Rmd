@@ -1,0 +1,170 @@
+---
+title: "statistical analysis"
+author: "Mingjia"
+date: "3/8/2022"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(car)
+library(rstatix)
+library(dplyr)
+library(tidyr)
+contrast.default = options("contrasts")
+options(contrasts = c("contr.helmert", "contr.poly"))
+```
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(purrr)
+library(gridExtra)
+source("utils.R")
+# ---- Load the Data ----
+data_subj = fread("summary data/test_accuracy.csv") 
+```
+
+
+```{r}
+#------------------median split IDs-----------------------
+data_subj_4cat = filter(data_subj, condition == "4cat")
+
+below_4cat_idx = with(data_subj_4cat,order(train[condition == "4cat"]))[1:30]
+below_4cat_ID = with(data_subj_4cat,ID[below_4cat_idx])
+data_subj_4cat$medgrp = ifelse(data_subj_4cat$ID %in% below_4cat_ID,"below","above")
+
+data_subj_2cat = filter(data_subj, condition == "2cat")
+
+below_2cat_idx = with(data_subj_2cat,order(train[condition == "2cat"]))[1:30]
+below_2cat_ID = with(data_subj_2cat,ID[below_2cat_idx])
+data_subj_2cat$medgrp = ifelse(data_subj_2cat$ID %in% below_2cat_ID,"below","above")
+
+data_subj = rbind(data_subj_2cat,data_subj_4cat)
+
+```
+
+# accuracy on training items
+## ANOVA: conditions x accuracy group 
+```{r}
+res.aov <- anova_test(data=data_subj,train ~ condition * medgrp, 
+                      type=3, effect.size = "pes",detailed=T)
+get_anova_table(res.aov,correction = "none")
+Prcorr_stats = data_subj %>% 
+                  group_by(condition,medgrp) %>% 
+                  summarize(mean = mean(train),
+                            SD = sd(train),
+                            SEM = SD/sqrt(length(train)))
+show(Prcorr_stats)
+```
+
+## t-test: compare 2cat and 4cat conditions for above-median group
+```{r}
+Prcorr_above = filter(data_subj,medgrp == "above")
+
+t.test(data = Prcorr_above, train ~ condition, var.equal = TRUE)
+Prcorr_above_stats = Prcorr_above %>% 
+                     group_by(condition) %>% 
+                     summarize(mean = mean(train),
+                               SEM = sd(train)/sqrt(length(train)))
+show(Prcorr_above_stats)
+
+```
+
+## t-test: compare 2cat and 4cat conditions for below-median group
+```{r}
+Prcorr_below = filter(data_subj,medgrp == "below")
+
+t.test(data = Prcorr_below, train ~ condition, var.equal = TRUE)
+Prcorr_above_stats = Prcorr_below %>% 
+                     group_by(condition) %>% 
+                     summarize(mean = mean(train),
+                               SEM = sd(train)/sqrt(length(train)))
+show(Prcorr_above_stats)
+
+```
+
+
+# accuracy on critical items
+## ANOVA: conditions x accuracy group 
+```{r}
+res.aov <- anova_test(data=data_subj,critical ~ condition * medgrp, 
+                      type=3, effect.size = "pes",detailed=T)
+get_anova_table(res.aov,correction = "none")
+Prcorr_stats = data_subj %>% 
+                  group_by(condition,medgrp) %>% 
+                  summarize(mean = mean(critical),
+                            SD = sd(critical),
+                            SEM = SD/sqrt(length(critical)))
+show(Prcorr_stats)
+```
+
+## t-test: compare 2cat and 4cat conditions for above-median group
+```{r}
+Prcorr_above = filter(data_subj,medgrp == "above")
+
+t.test(data = Prcorr_above, critical ~ condition, var.equal = TRUE)
+Prcorr_above_stats = Prcorr_above %>% 
+                     group_by(condition) %>% 
+                     summarize(mean = mean(critical),
+                               SEM = sd(critical)/sqrt(length(critical)))
+show(Prcorr_above_stats)
+
+```
+
+## t-test: compare 2cat and 4cat conditions for below-median group
+```{r}
+Prcorr_below = filter(data_subj,medgrp == "below")
+
+t.test(data = Prcorr_below, critical ~ condition, var.equal = TRUE)
+Prcorr_above_stats = Prcorr_below %>% 
+                     group_by(condition) %>% 
+                     summarize(mean = mean(critical),
+                               SEM = sd(critical)/sqrt(length(critical)))
+show(Prcorr_above_stats)
+
+```
+
+
+# accuracy on other transfer items
+## ANOVA: conditions x accuracy group 
+```{r}
+res.aov <- anova_test(data=data_subj,other ~ condition * medgrp, 
+                      type=3, effect.size = "pes",detailed=T)
+get_anova_table(res.aov,correction = "none")
+Prcorr_stats = data_subj %>% 
+                  group_by(condition,medgrp) %>% 
+                  summarize(mean = mean(critical),
+                            SD = sd(critical),
+                            SEM = SD/sqrt(length(critical)))
+show(Prcorr_stats)
+```
+
+## t-test: compare 2cat and 4cat conditions for above-median group
+```{r}
+Prcorr_above = filter(data_subj,medgrp == "above")
+
+t.test(data = Prcorr_above, other ~ condition, var.equal = TRUE)
+Prcorr_above_stats = Prcorr_above %>% 
+                     group_by(condition) %>% 
+                     summarize(mean = mean(other),
+                               SEM = sd(other)/sqrt(length(other)))
+show(Prcorr_above_stats)
+
+```
+
+## t-test: compare 2cat and 4cat conditions for below-median group
+```{r}
+Prcorr_below = filter(data_subj,medgrp == "below")
+
+t.test(data = Prcorr_below, other ~ condition, var.equal = TRUE)
+Prcorr_above_stats = Prcorr_below %>% 
+                     group_by(condition) %>% 
+                     summarize(mean = mean(other),
+                               SEM = sd(other)/sqrt(length(other)))
+show(Prcorr_above_stats)
+
+```
